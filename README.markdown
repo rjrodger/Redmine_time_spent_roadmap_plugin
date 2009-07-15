@@ -2,8 +2,8 @@
 
 It is very useful modification that is enabling to show how much time team of developers (or one) burned on given issue. It can be viewed at Project -> Issues   query.
 The Time Spent plugin is actually our modification of time spent patch posted on Redmine forum some time ago. What we did is:
-* Added line in app/helpers/queries_helper.rb so the time value will be displayed as a float in x.xx format
-* Added permission in Administration -> Roles and permissions -> role -> Time tracking
+ * Added line in app/helpers/queries_helper.rb so the time value will be displayed as a float in x.xx format
+ * Added permission in Administration -> Roles and permissions -> role -> Time tracking
 
 ## Getting the plugin 
 
