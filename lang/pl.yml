@@ -1,0 +1,7 @@
+# Polish translations for Ruby on Rails
+# by Jacek Becela (jacek.becela@gmail.com, http://github.com/ncr)
+
+pl:
+
+  field_spent_hours: Spędzony czas
+  field_issue_to: Powiązania zagadnienia

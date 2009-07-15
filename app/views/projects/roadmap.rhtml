@@ -1,0 +1,76 @@
+<h2><%=l(:label_roadmap)%></h2>
+
+<% if @versions.empty? %>
+<p class="nodata"><%= l(:label_no_data) %></p>
+<% else %>
+<div id="roadmap">
+<% @versions.each do |version| %>   
+    <%= tag 'a', :name => version.name %>
+    <h3 class="icon22 icon22-package"><%= link_to h(version.name), :controller => 'versions', :action => 'show', :id => version %></h3>
+    <%= render :partial => 'versions/overview', :locals => {:version => version} %>
+    <%= render(:partial => "wiki/content", :locals => {:content => version.wiki_page.content}) if version.wiki_page %>
+
+    <% issues = version.fixed_issues.find(:all,
+                                          :include => [:status, :tracker],
+                                          :conditions => ["tracker_id in (#{@selected_tracker_ids.join(',')})"],
+                                          :order => "#{Tracker.table_name}.position, #{Issue.table_name}.id") unless @selected_tracker_ids.empty?
+       issues ||= []
+    %>
+    <% if issues.size > 0 %>
+    <fieldset class="related-issues"><legend><%= l(:label_related_issues) %></legend>
+
+<table width=100% border="0" cellpadding="0" cellspacing="0">
+<li><tr align=center>
+	<td width=40% ><b><%= l(:field_subject) %> </b></td>
+	<td width=15% align=left ><b>&nbsp <%= l(:field_done_ratio) %> </b></td>
+	<td width=15% align=center ><b>Current state</b></td>
+	<td width=10% align=center ><b><%= l(:field_estimated_hours) %> </b></td>
+<% if User.current.allowed_to?(:view_spent_time, @project) %>
+	<td width=10% align=center ><b><%= l(:field_spent_hours) %> </b></td>
+<% end %>
+</tr>
+    <%- issues.each do |issue| -%>
+        <tr><td width=40% align=left><%= link_to_issue(issue) %>: <%=h issue.subject %></td>
+<td width=15%>  <div class="progress"> <%= progress_bar(issue.done_ratio) %> </div> </td>
+<td width=15% align=center>
+	<% if (issue.status.is_closed == true || issue.status.name == "Ready on test" || issue.status.name == "Ready on production" || issue.status.name == "Ready on development")%> 
+		<span style="color:green"> <%=h issue.status %> </span>
+		<% else %> 
+		<span style="color:orange"> <%=h issue.status %> </span>
+	<% end %>
+</td>
+<td width=10% align=center><%= issue.estimated_hours %></td>
+
+<% if User.current.allowed_to?(:view_spent_time, @project) %>
+		       <td width=10% align=center>   <%= "%0.02f" % issue.spent_hours %> </td>
+		      <% end %>
+</tr> 
+</li>
+    <%- end -%>
+</table>
+
+    </fieldset>
+    <% end %>
+<% end %>
+</div>
+<% end %>
+
+<% content_for :sidebar do %>
+<% form_tag({}, :method => :get) do %>
+<h3><%= l(:label_roadmap) %></h3>
+<% @trackers.each do |tracker| %>
+  <label><%= check_box_tag "tracker_ids[]", tracker.id, (@selected_tracker_ids.include? tracker.id.to_s), :id => nil %>
+  <%= tracker.name %></label><br />
+<% end %>
+<br />
+<label for="completed"><%= check_box_tag "completed", 1, params[:completed] %> <%= l(:label_show_completed_versions) %></label>
+<p><%= submit_tag l(:button_apply), :class => 'button-small', :name => nil %></p>
+<% end %>
+
+<h3><%= l(:label_version_plural) %></h3>
+<% @versions.each do |version| %>
+<%= link_to version.name, "##{version.name}" %><br />
+<% end %>
+<% end %>
+
+<% html_title(l(:label_roadmap)) %>

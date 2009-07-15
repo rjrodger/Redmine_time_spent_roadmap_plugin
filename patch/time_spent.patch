@@ -1,0 +1,101 @@
+Index: app/helpers/queries_helper.rb
+===================================================================
+--- app/helpers/queries_helper.rb	(wersja 2796)
++++ app/helpers/queries_helper.rb	(kopia robocza)
+@@ -37,6 +37,8 @@
+         format_date(value)
+       elsif value.is_a?(Time)
+         format_time(value)
++      elsif value.is_a?(Float)
++      "%0.02f" % value
+       else
+         case column.name
+         when :subject
+Index: app/helpers/issues_helper.rb
+===================================================================
+--- app/helpers/issues_helper.rb	(wersja 2796)
++++ app/helpers/issues_helper.rb	(kopia robocza)
+@@ -149,6 +149,7 @@
+                   l(:field_due_date),
+                   l(:field_done_ratio),
+                   l(:field_estimated_hours),
++                  l(:field_spent_hours),
+                   l(:field_created_on),
+                   l(:field_updated_on)
+                   ]
+@@ -175,6 +176,7 @@
+                   format_date(issue.due_date),
+                   issue.done_ratio,
+                   issue.estimated_hours.to_s.gsub('.', decimal_separator),
++                  issue.spent_hours.to_s.gsub('.', decimal_separator),
+                   format_time(issue.created_on),  
+                   format_time(issue.updated_on)
+                   ]
+Index: app/models/query.rb
+===================================================================
+--- app/models/query.rb	(wersja 2796)
++++ app/models/query.rb	(kopia robocza)
+@@ -112,6 +112,7 @@
+     QueryColumn.new(:start_date, :sortable => "#{Issue.table_name}.start_date"),
+     QueryColumn.new(:due_date, :sortable => "#{Issue.table_name}.due_date"),
+     QueryColumn.new(:estimated_hours, :sortable => "#{Issue.table_name}.estimated_hours"),
++    QueryColumn.new(:spent_hours),
+     QueryColumn.new(:done_ratio, :sortable => "#{Issue.table_name}.done_ratio", :groupable => true),
+     QueryColumn.new(:created_on, :sortable => "#{Issue.table_name}.created_on", :default_order => 'desc'),
+   ]
+Index: app/views/issues/_list.rhtml
+===================================================================
+--- app/views/issues/_list.rhtml	(wersja 2796)
++++ app/views/issues/_list.rhtml	(kopia robocza)
+@@ -1,4 +1,7 @@
++<div class="with-scroll">
++
+ <% form_tag({}) do -%>	
++
+ <table class="list issues">
+     <thead><tr>
+         <th><%= link_to image_tag('toggle_check.png'), {}, :onclick => 'toggleIssuesSelection(Element.up(this, "form")); return false;',
+@@ -6,11 +9,18 @@
+         </th>
+ 		<%= sort_header_tag('id', :caption => '#', :default_order => 'desc') %>
+         <% query.columns.each do |column| %>
+-          <%= column_header(column) %>
++		<% if column.name.object_id == (:spent_hours).object_id %>
++			  	<% if User.current.allowed_to?(:view_spent_time, @project) %>
++			          <%= column_header(column) %>
++				<% end %>
++		<% else %>
++			<%= column_header(column) %>
++		<% end %>
+         <% end %>
+ 	</tr></thead>
+ 	<% group = false %>
+-	<tbody>
++	
++    <tbody>
+ 	<% issues.each do |issue| -%>
+   <% if @query.grouped? && issue.send(@query.group_by) != group %>
+     <% group = issue.send(@query.group_by) %>
+@@ -25,9 +35,21 @@
+ 	<tr id="issue-<%= issue.id %>" class="hascontextmenu <%= cycle('odd', 'even') %> <%= issue.css_classes %>">
+ 	    <td class="checkbox"><%= check_box_tag("ids[]", issue.id, false, :id => nil) %></td>
+ 		<td><%= link_to issue.id, :controller => 'issues', :action => 'show', :id => issue %></td>
+-        <% query.columns.each do |column| %><%= content_tag 'td', column_content(column, issue), :class => column.name %><% end %>
++        <% query.columns.each do |column| %>
++							<% if column.name.object_id == (:spent_hours).object_id %>
++								<% if User.current.allowed_to?(:view_spent_time, @project) %>
++									<%= content_tag 'td', column_content(column, issue), :class => column.name %>
++								<% end %>
++		  					<% else %>
++								<%= content_tag 'td', column_content(column, issue), :class => column.name %>
++		  					<% end %>
++	<% end %>
+ 	</tr>
+ 	<% end -%>
+ 	</tbody>
++
++
+ </table>
+ <% end -%>
++
++</div>
